@@ -55,7 +55,7 @@ class SiameseDataset(Dataset):
         
         return img1, img2, torch.tensor(target, dtype=torch.float32)
 
-def prepare_semisupervised_mnist_data(subset_ratio=0.2, train_ratio=0.75):
+def prepare_semisupervised_mnist_data(subset_ratio=0.2, train_ratio=0.75, batchsize = 32):
     """
     Prepara il dataset MNIST per il training della Siamese Network
     
@@ -98,13 +98,13 @@ def prepare_semisupervised_mnist_data(subset_ratio=0.2, train_ratio=0.75):
     # Crea i DataLoader
     train_loader = DataLoader(
         train_siamese_dataset, 
-        batch_size=32,
+        batch_size=batchsize,
         shuffle=True,
     )
     
     test_loader = DataLoader(
         test_siamese_dataset, 
-        batch_size=32, 
+        batch_size=batchsize, 
         shuffle=False,
     )
     
@@ -112,7 +112,7 @@ def prepare_semisupervised_mnist_data(subset_ratio=0.2, train_ratio=0.75):
     print(f"- Subset totale: {len(mnist_subset)} campioni")
     print(f"- Training set: {len(train_subset)} campioni")
     print(f"- Test set: {len(test_subset)} campioni")
-    print(f"- Batch size: 32")
+    print(f"- Batch size: {batchsize}")
     
     return train_loader, test_loader, full_mnist
 

@@ -23,7 +23,7 @@ def analyze_clusters(true_labels, cluster_labels):
     
     return cm
 
-def visualize_embeddings(embeddings, true_labels, cluster_labels, embedding_size):
+def visualize_embeddings(embeddings, true_labels, cluster_labels, embedding_size, perplexity=30):
     """
     Visualizza gli embedding in 2D
     """
@@ -35,7 +35,7 @@ def visualize_embeddings(embeddings, true_labels, cluster_labels, embedding_size
     else:
         # Altrimenti usa t-SNE per riduzione dimensionalità
         print("Applicando t-SNE per visualizzazione...")
-        tsne = TSNE(n_components=2, random_state=42, perplexity=30)
+        tsne = TSNE(n_components=2, random_state=42, perplexity=perplexity)
         embeddings_2d = tsne.fit_transform(embeddings)
     
     # Plot delle vere etichette

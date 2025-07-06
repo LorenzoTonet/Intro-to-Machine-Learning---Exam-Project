@@ -274,7 +274,6 @@ def visualize_triplets(dataset, num_triplets=5):
     plt.tight_layout()
     plt.show()
 
-
 def MNIST_data_loader():
     transform = transforms.Compose([
         transforms.ToTensor(),

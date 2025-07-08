@@ -19,7 +19,7 @@ class SiameseCoupleDataset(Dataset):
         self.transform = transform
         self.labels = [dataset[i][1] for i in range(len(dataset))]
         
-        # Organizza gli indici per classe per facilitare il sampling
+        # Organizza gli indici per classe
         self.label_to_indices = {}
         for idx, label in enumerate(self.labels):
             if label not in self.label_to_indices:
@@ -30,24 +30,24 @@ class SiameseCoupleDataset(Dataset):
         return len(self.dataset)
     
     def __getitem__(self, idx):
-        # Ottieni la prima immagine
+        # get reference
         img1, label1 = self.dataset[idx]
         
-        # Decidi se creare una coppia positiva (stessa classe) o negativa (classi diverse)
+        # positive or negative pair
         should_get_same_class = random.random() > 0.5
         
         if should_get_same_class:
-            # Coppia positiva: stessa classe
+            # Positive pair: same class
             idx2 = random.choice(self.label_to_indices[label1])
             img2, label2 = self.dataset[idx2]
-            target = 1.0  # Similarità alta
+            target = 1.0 # Label for the pair
         else:
-            # Coppia negativa: classe diversa
+            # Negative pair: different class
             different_labels = [l for l in self.label_to_indices.keys() if l != label1]
             label2 = random.choice(different_labels)
             idx2 = random.choice(self.label_to_indices[label2])
             img2, _ = self.dataset[idx2]
-            target = 0.0  # Similarità bassa
+            target = 0.0  # Label for the pair
         
         if self.transform:
             img1 = self.transform(img1)
@@ -73,15 +73,13 @@ def prepare_mnist_data_couples(subset_ratio=0.2, train_ratio=0.75, batchsize = 3
         transforms.Normalize((0.1307,), (0.3081,)) # normalizzare i valori dei pixel(aiuta la convergenza)
     ])
     
-    # Carica il dataset MNIST completo
     full_mnist = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)
     
-    # Prendi solo una parte del dataset (20% di default)
+    # Extract a subset of the dataset
     subset_size = int(len(full_mnist) * subset_ratio)
     subset_indices = torch.randperm(len(full_mnist))[:subset_size]
     mnist_subset = Subset(full_mnist, subset_indices)
     
-    # Dividi il subset in train e test
     train_size = int(len(mnist_subset) * train_ratio)
     test_size = len(mnist_subset) - train_size
     
@@ -91,11 +89,10 @@ def prepare_mnist_data_couples(subset_ratio=0.2, train_ratio=0.75, batchsize = 3
     train_subset = Subset(mnist_subset, train_indices)
     test_subset = Subset(mnist_subset, test_indices)
     
-    # Crea i dataset per la Siamese Network
     train_siamese_dataset = SiameseCoupleDataset(train_subset, transform=None)
     test_siamese_dataset = SiameseCoupleDataset(test_subset, transform=None)
     
-    # Crea i DataLoader
+    # DATALOADERS
     train_loader = DataLoader(
         train_siamese_dataset, 
         batch_size=batchsize,
@@ -125,7 +122,7 @@ def visualize_pairs(dataset, num_pairs=5):
     for i in range(num_pairs):
         img1, img2, label = dataset[i]
         
-        # Denormalizza per la visualizzazione
+        # Denormalize for visualization
         img1 = img1 * 0.3081 + 0.1307
         img2 = img2 * 0.3081 + 0.1307
         
@@ -152,7 +149,6 @@ class SiameseTripletsDataset(Dataset):
         self.transform = transform
         self.labels = [dataset[i][1] for i in range(len(dataset))]
         
-        # Organizza gli indici per classe per facilitare il sampling
         self.label_to_indices = {}
         for idx, label in enumerate(self.labels):
             if label not in self.label_to_indices:
@@ -163,12 +159,14 @@ class SiameseTripletsDataset(Dataset):
         return len(self.dataset)
     
     def __getitem__(self, idx):
-        # Ottieni l'immagine anchor
+        # Obtain the anchor image and label
         anchor_img, anchor_lab = self.dataset[idx]
 
+        #get two sets of labels: one with the same label as the anchor and one with different labels
         equal_labels = [l for l in self.label_to_indices.keys() if l == anchor_lab]
         different_labels = [l for l in self.label_to_indices.keys() if l != anchor_lab]
 
+        # Extract a positive and a negative image
         positive_lab = random.choice(equal_labels)
         positive_idx = random.choice(self.label_to_indices[positive_lab])
         positive_img, _ = self.dataset[positive_idx]
@@ -205,12 +203,10 @@ def prepare_mnist_data_triplets(subset_ratio=0.2, train_ratio=0.75, batchsize = 
     # Carica il dataset MNIST completo
     full_mnist = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)
     
-    # Prendi solo una parte del dataset (20% di default)
     subset_size = int(len(full_mnist) * subset_ratio)
     subset_indices = torch.randperm(len(full_mnist))[:subset_size]
     mnist_subset = Subset(full_mnist, subset_indices)
     
-    # Dividi il subset in train e test
     train_size = int(len(mnist_subset) * train_ratio)
     test_size = len(mnist_subset) - train_size
     
@@ -220,11 +216,9 @@ def prepare_mnist_data_triplets(subset_ratio=0.2, train_ratio=0.75, batchsize = 
     train_subset = Subset(mnist_subset, train_indices)
     test_subset = Subset(mnist_subset, test_indices)
     
-    # Crea i dataset per la Siamese Network
     train_siamese_dataset = SiameseTripletsDataset(train_subset, transform=None)
     test_siamese_dataset = SiameseTripletsDataset(test_subset, transform=None)
-    
-    # Crea i DataLoader
+
     train_loader = DataLoader(
         train_siamese_dataset, 
         batch_size=batchsize,
@@ -275,6 +269,9 @@ def visualize_triplets(dataset, num_triplets=5):
     plt.show()
 
 def MNIST_data_loader():
+    """
+    Crea un DataLoader per tutto mnist come test
+    """
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.1307,), (0.3081,))
@@ -302,9 +299,6 @@ def create_embedding_dataset(model, data_loader):
             
             embeddings.append(embedding.cpu().numpy())
             labels.extend(target.numpy())
-            
-            if batch_idx % 100 == 0:
-                print(f'Processato batch {batch_idx}/{len(data_loader)}')
     
     embeddings = np.vstack(embeddings)
     labels = np.array(labels)
@@ -312,6 +306,7 @@ def create_embedding_dataset(model, data_loader):
     return embeddings, labels
 
 
+# Example usage:
 if __name__ == "__main__":
 
     train_loader_triplet, test_loader_triplet, full_dataset_triplet = prepare_mnist_data_triplets()

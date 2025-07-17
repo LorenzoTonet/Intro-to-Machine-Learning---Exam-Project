@@ -41,7 +41,7 @@ def visualize_embeddings(embeddings, true_labels, cluster_labels, embedding_size
     # Plot delle vere etichette
     scatter1 = axes[0].scatter(embeddings_2d[:, 0], embeddings_2d[:, 1], 
                               c=true_labels, cmap='tab10', alpha=0.7, s=1)
-    axes[0].set_title('Embedding - Vere Etichette MNIST')
+    axes[0].set_title('Embedding - Vere Etichette')
     axes[0].set_xlabel('Dimensione 1')
     axes[0].set_ylabel('Dimensione 2')
     plt.colorbar(scatter1, ax=axes[0])

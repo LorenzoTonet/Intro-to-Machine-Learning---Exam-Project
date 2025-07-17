@@ -306,6 +306,148 @@ def create_embedding_dataset(model, data_loader):
     return embeddings, labels
 
 
+##############################################################################################################################
+
+def prepare_kmnist_data_triplets(subset_ratio=0.2, train_ratio=0.75, batchsize = 32):
+    """
+    Prepara il dataset KMNIST per il training della Siamese Network
+    
+    Args:
+        subset_ratio: Percentuale del dataset KMNIST da utilizzare come labeled (default: 20%)
+        train_ratio: Percentuale del subset per il training (default: 75%)
+    
+    Returns:
+        train_loader, test_loader, full_dataset
+    """
+    
+    # Trasformazioni per normalizzare i dati
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.1904,), (0.3475,)) # normalizzare i valori dei pixel(aiuta la convergenza)
+    ])
+    
+    # Carica il dataset MNIST completo
+    full_kmnist = torchvision.datasets.KMNIST(root='./data', train=True, download=True, transform=transform)
+    
+    subset_size = int(len(full_kmnist) * subset_ratio)
+    subset_indices = torch.randperm(len(full_kmnist))[:subset_size]
+    kmnist_subset = Subset(full_kmnist, subset_indices)
+    
+    train_size = int(len(kmnist_subset) * train_ratio)
+    test_size = len(kmnist_subset) - train_size
+    
+    train_indices = list(range(train_size))
+    test_indices = list(range(train_size, len(kmnist_subset)))
+    
+    train_subset = Subset(kmnist_subset, train_indices)
+    test_subset = Subset(kmnist_subset, test_indices)
+    
+    train_siamese_dataset = SiameseTripletsDataset(train_subset, transform=None)
+    test_siamese_dataset = SiameseTripletsDataset(test_subset, transform=None)
+
+    train_loader = DataLoader(
+        train_siamese_dataset, 
+        batch_size=batchsize,
+        shuffle=True,
+    )
+    
+    test_loader = DataLoader(
+        test_siamese_dataset, 
+        batch_size=batchsize, 
+        shuffle=False,
+    )
+    
+    print(f"Dataset preparato:")
+    print(f"- Subset totale: {len(kmnist_subset)} campioni")
+    print(f"- Training set: {len(train_subset)} campioni")
+    print(f"- Test set: {len(test_subset)} campioni")
+    print(f"- Batch size: {batchsize}")
+    
+    return train_loader, test_loader, full_kmnist
+
+def KMNIST_data_loader():
+    """
+    Crea un DataLoader per tutto kmnist come test
+    """
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.1904,), (0.3475,))
+    ])
+    dataset = torchvision.datasets.MNIST('./data', train=False, download=True, transform=transform)
+    data_loader = DataLoader(dataset, batch_size=256, shuffle=False)
+    return data_loader
+
+##############################################################################################################################
+
+def prepare_fmnist_data_triplets(subset_ratio=0.2, train_ratio=0.75, batchsize = 32):
+    """
+    Prepara il dataset FMNIST per il training della Siamese Network
+    
+    Args:
+        subset_ratio: Percentuale del dataset FMNIST da utilizzare come labeled (default: 20%)
+        train_ratio: Percentuale del subset per il training (default: 75%)
+    
+    Returns:
+        train_loader, test_loader, full_dataset
+    """
+    
+    # Trasformazioni per normalizzare i dati
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.1904,), (0.3475,)) # normalizzare i valori dei pixel(aiuta la convergenza)
+    ])
+    
+    # Carica il dataset MNIST completo
+    full_fmnist = torchvision.datasets.FashionMNIST(root='./data', train=True, download=True, transform=transform)
+    
+    subset_size = int(len(full_fmnist) * subset_ratio)
+    subset_indices = torch.randperm(len(full_fmnist))[:subset_size]
+    fmnist_subset = Subset(full_fmnist, subset_indices)
+    
+    train_size = int(len(fmnist_subset) * train_ratio)
+    test_size = len(fmnist_subset) - train_size
+    
+    train_indices = list(range(train_size))
+    test_indices = list(range(train_size, len(fmnist_subset)))
+    
+    train_subset = Subset(fmnist_subset, train_indices)
+    test_subset = Subset(fmnist_subset, test_indices)
+    
+    train_siamese_dataset = SiameseTripletsDataset(train_subset, transform=None)
+    test_siamese_dataset = SiameseTripletsDataset(test_subset, transform=None)
+
+    train_loader = DataLoader(
+        train_siamese_dataset, 
+        batch_size=batchsize,
+        shuffle=True,
+    )
+    
+    test_loader = DataLoader(
+        test_siamese_dataset, 
+        batch_size=batchsize, 
+        shuffle=False,
+    )
+    
+    print(f"Dataset preparato:")
+    print(f"- Subset totale: {len(fmnist_subset)} campioni")
+    print(f"- Training set: {len(train_subset)} campioni")
+    print(f"- Test set: {len(test_subset)} campioni")
+    print(f"- Batch size: {batchsize}")
+    
+    return train_loader, test_loader, full_fmnist
+
+def FMNIST_data_loader():
+    """
+    Crea un DataLoader per tutto fmnist come test
+    """
+    transform = transforms.Compose([
+        transforms.ToTensor()
+    ])
+    dataset = torchvision.datasets.FashionMNIST('./data', train=False, download=True, transform=transform)
+    data_loader = DataLoader(dataset, batch_size=256, shuffle=False)
+    return data_loader
+
+##################################################################################################
 # Example usage:
 if __name__ == "__main__":
 

@@ -181,8 +181,64 @@ class SiameseTripletsDataset(Dataset):
             anchor_img = self.transform(anchor_img)
         
         return anchor_img, positive_img, negative_img
+
+class FixedTripletDataset(Dataset):
+    """
+    Dataset che contiene un numero prefissato di triplette (anchor, positivo, negativo)
+    Le triplette sono generate offline a partire dal dataset etichettato.
+    """
+    def __init__(self, dataset, n_triplets=10000, transform=None):
+        self.dataset = dataset
+        self.transform = transform
+        self.n_triplets = n_triplets
+        
+        self.labels = [dataset[i][1] for i in range(len(dataset))]
+        
+        self.label_to_indices = {}
+        for idx, label in enumerate(self.labels):
+            if label not in self.label_to_indices:
+                self.label_to_indices[label] = []
+            self.label_to_indices[label].append(idx)
+        
+        self.triplets = self.generate_triplets()
     
-def prepare_mnist_data_triplets(subset_ratio=0.2, train_ratio=0.75, batchsize = 32):
+    def generate_triplets(self):
+        triplets = []
+        label_list = list(self.label_to_indices.keys())
+        for _ in range(self.n_triplets):
+
+            pos_label = random.choice(label_list)
+            while len(self.label_to_indices[pos_label]) < 2:
+                pos_label = random.choice(label_list)
+
+            anchor_idx, positive_idx = random.sample(self.label_to_indices[pos_label], 2)
+
+            # Scegli una label diversa per il negativo
+            neg_label = random.choice(label_list)
+            while neg_label == pos_label:
+                neg_label = random.choice(label_list)
+            negative_idx = random.choice(self.label_to_indices[neg_label])
+
+            triplets.append((anchor_idx, positive_idx, negative_idx))
+        return triplets
+
+    def __len__(self):
+        return len(self.triplets)
+
+    def __getitem__(self, idx):
+        a_idx, p_idx, n_idx = self.triplets[idx]
+        anchor_img, _ = self.dataset[a_idx]
+        positive_img, _ = self.dataset[p_idx]
+        negative_img, _ = self.dataset[n_idx]
+
+        if self.transform:
+            anchor_img = self.transform(anchor_img)
+            positive_img = self.transform(positive_img)
+            negative_img = self.transform(negative_img)
+
+        return anchor_img, positive_img, negative_img
+        
+def prepare_mnist_data_triplets(subset_ratio=0.2, train_ratio=0.75, batchsize = 32, online_mining=True, n_samples=1000):
     """
     Prepara il dataset MNIST per il training della Siamese Network
     
@@ -216,8 +272,12 @@ def prepare_mnist_data_triplets(subset_ratio=0.2, train_ratio=0.75, batchsize = 
     train_subset = Subset(mnist_subset, train_indices)
     test_subset = Subset(mnist_subset, test_indices)
     
-    train_siamese_dataset = SiameseTripletsDataset(train_subset, transform=None)
-    test_siamese_dataset = SiameseTripletsDataset(test_subset, transform=None)
+    if online_mining == True:
+        train_siamese_dataset = SiameseTripletsDataset(train_subset, transform=None)
+        test_siamese_dataset = SiameseTripletsDataset(test_subset, transform=None)
+    else:
+        train_siamese_dataset = FixedTripletDataset(train_subset, n_triplets=n_samples, transform=None)
+        test_siamese_dataset = FixedTripletDataset(test_subset, n_triplets=n_samples, transform=None)
 
     train_loader = DataLoader(
         train_siamese_dataset, 

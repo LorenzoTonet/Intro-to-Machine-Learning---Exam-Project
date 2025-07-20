@@ -439,7 +439,7 @@ def KMNIST_data_loader():
 
 ##############################################################################################################################
 
-def prepare_fmnist_data_triplets(subset_ratio=0.2, train_ratio=0.75, batchsize = 32):
+def prepare_fmnist_data_triplets(subset_ratio=0.2, train_ratio=0.75, batchsize = 32, online_mining=True, n_samples=1000):
     """
     Prepara il dataset FMNIST per il training della Siamese Network
     
@@ -473,8 +473,12 @@ def prepare_fmnist_data_triplets(subset_ratio=0.2, train_ratio=0.75, batchsize =
     train_subset = Subset(fmnist_subset, train_indices)
     test_subset = Subset(fmnist_subset, test_indices)
     
-    train_siamese_dataset = SiameseTripletsDataset(train_subset, transform=None)
-    test_siamese_dataset = SiameseTripletsDataset(test_subset, transform=None)
+    if online_mining == True:
+        train_siamese_dataset = SiameseTripletsDataset(train_subset, transform=None)
+        test_siamese_dataset = SiameseTripletsDataset(test_subset, transform=None)
+    else:
+        train_siamese_dataset = FixedTripletDataset(train_subset, n_triplets=n_samples, transform=None)
+        test_siamese_dataset = FixedTripletDataset(test_subset, n_triplets=n_samples, transform=None)
 
     train_loader = DataLoader(
         train_siamese_dataset, 
